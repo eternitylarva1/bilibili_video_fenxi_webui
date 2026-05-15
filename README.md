@@ -56,19 +56,52 @@ buvid3: "你的buvid3"       # B站Cookie中的buvid3
 ```
 
 ### 3. 安装依赖
+
+#### Windows
+```powershell
+# 从 microsoft store 或 python.org 安装 Python
+pip install flask pyyaml requests
+```
+
+#### Linux / WSL
 ```bash
 pip install flask pyyaml requests
 ```
 
+#### macOS
+```bash
+# 可能需要先安装 python3
+pip3 install flask pyyaml requests
+```
+
 ### 4. 启动爬虫采集数据
+
+#### Windows
+```powershell
+cd crawler
+python bilibili_spider.py
+```
+
+#### Linux / WSL / macOS
 ```bash
 cd crawler
+python3 bilibili_spider.py
+# 或使用脚本
 bash run_spider.sh
 ```
 
 ### 5. 启动WebUI分析
-```bash
+
+#### Windows
+```powershell
+cd ..
 python app.py
+```
+
+#### Linux / WSL / macOS
+```bash
+cd ..
+python3 app.py
 ```
 
 访问 http://localhost:30001
