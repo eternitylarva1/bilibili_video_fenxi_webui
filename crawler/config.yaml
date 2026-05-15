@@ -1,0 +1,23 @@
+cookies:
+  buvid3: ""  # 必填：从B站获取
+filter:
+  beyond_24h:
+    min_play_count: 20000
+  within_24h:
+    max_hours: 24
+    min_play_per_hour: 2000
+headers:
+  Origin: https://www.bilibili.com
+  Referer: https://www.bilibili.com
+  User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36
+interval_minutes: 0
+keyword: ""  # 必填：搜索关键词，如"杀戮尖塔2"
+last_page: 0
+last_run: ""
+max_pages_per_run: 100
+order: click
+output_file: filtered_videos.json
+page_size: 30
+request_interval: 0.5
+sessdata: ""  # 必填：从B站获取cookie中的SESSDATA
+target_count: 1000

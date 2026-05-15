@@ -27,6 +27,7 @@
                 </div>
             </div>
             <div class="header-right">
+                <button class="btn btn-sm" id="helpBtn" title="使用帮助">?</button>
                 <div class="status-indicator" id="spiderStatus">
                     <span class="status-dot idle"></span>
                     <span class="status-text">空闲</span>
@@ -608,6 +609,7 @@
         // DOM Elements
         const elements = {
             // Buttons
+            helpBtn: document.getElementById('helpBtn'),
             runSpiderBtn: document.getElementById('runSpiderBtn'),
             refreshStatusBtn: document.getElementById('refreshStatusBtn'),
             clearLogBtn: document.getElementById('clearLogBtn'),
@@ -2270,6 +2272,74 @@
         });
 
         init();
+
+        // ==================== Help Modal ====================
+        const helpModal = document.createElement('div');
+        helpModal.id = 'helpModal';
+        helpModal.className = 'modal';
+        helpModal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>使用帮助</h3>
+                    <button class="modal-close" id="closeHelpBtn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <h4>一、快速开始</h4>
+                    <ol>
+                        <li>在「爬虫控制」Tab填写B站 Cookie（SESSDATA）和搜索关键词</li>
+                        <li>点击「启动爬虫」开始采集数据</li>
+                        <li>切换到「数据分析」查看散点图和分布统计</li>
+                        <li>在「结果查看」Tab搜索和筛选视频</li>
+                    </ol>
+
+                    <h4>二、散点图使用</h4>
+                    <ul>
+                        <li><strong>滚轮缩放</strong>：在散点图上滚动鼠标，以鼠标位置为中心放大/缩小</li>
+                        <li><strong>滑块缩放</strong>：拖动顶部滑块，从原点开始缩放</li>
+                        <li><strong>点击查看</strong>：点击任意点查看视频详情</li>
+                        <li><strong>重置视图</strong>：点击「重置视图」恢复默认范围</li>
+                    </ul>
+
+                    <h4>三、关键词分析</h4>
+                    <p>点击关键词云中的词可筛选包含该词的视频，筛选结果会联动到视频列表和散点图。</p>
+
+                    <h4>四、数据筛选</h4>
+                    <ul>
+                        <li>时长筛选：&lt;5分钟 / 5-15分钟 / 15-30分钟 / &gt;30分钟</li>
+                        <li>播放量筛选：&gt;10万 / &gt;20万 / &gt;50万 / &gt;100万</li>
+                        <li>支持标题关键词搜索</li>
+                    </ul>
+
+                    <h4>五、获取 Cookie</h4>
+                    <ol>
+                        <li>登录 B站 (bilibili.com)</li>
+                        <li>按 F12 打开开发者工具</li>
+                        <li>切换到「Network」标签</li>
+                        <li>刷新页面，点击任意请求</li>
+                        <li>在「Request Headers」中找到 Cookie</li>
+                        <li>复制 SESSDATA 的值填入配置</li>
+                    </ol>
+
+                    <h4>六、数据说明</h4>
+                    <ul>
+                        <li>播放量和点赞数使用中文单位：w=万，k=千</li>
+                        <li>默认使用杀戮尖塔题材数据，如需其他题材请重新爬取</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(helpModal);
+
+        elements.closeHelpBtn = document.getElementById('closeHelpBtn');
+        elements.helpBtn.addEventListener('click', () => {
+            helpModal.style.display = 'flex';
+        });
+        elements.closeHelpBtn.addEventListener('click', () => {
+            helpModal.style.display = 'none';
+        });
+        helpModal.addEventListener('click', (e) => {
+            if (e.target === helpModal) helpModal.style.display = 'none';
+        });
     </script>
 </body>
 </html>
