@@ -1,0 +1,2275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B站视频爬虫 - 数据监控面板</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app">
+        <!-- Header with Stats -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="8" fill="#00A1D6"/>
+                        <path d="M8 12L16 8L24 12V20L16 24L8 20V12Z" stroke="#fff" stroke-width="2"/>
+                        <circle cx="16" cy="16" r="4" fill="#fff"/>
+                    </svg>
+                </div>
+                <div class="header-title">
+                    <h1>B站视频爬虫</h1>
+                    <span class="subtitle">数据监控面板</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="status-indicator" id="spiderStatus">
+                    <span class="status-dot idle"></span>
+                    <span class="status-text">空闲</span>
+                </div>
+                <button class="btn btn-primary" id="runSpiderBtn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M4 2L14 8L4 14V2Z"/>
+                    </svg>
+                    启动爬虫
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Row - moved to header -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="totalVideos">0</span>
+                    <span class="stat-label">已爬取视频</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                        <polyline points="17 6 23 6 23 12"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="totalPlays">0</span>
+                    <span class="stat-label">累计播放量</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="totalLikes">0</span>
+                    <span class="stat-label">累计点赞</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="lastRunTime">--</span>
+                    <span class="stat-label">上次运行</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Tab Navigation - reordered -->
+            <div class="tab-nav">
+                <button class="tab-btn active" data-tab="overview">数据分析</button>
+                <button class="tab-btn" data-tab="results">结果查看</button>
+                <button class="tab-btn" data-tab="keywords">关键词</button>
+                <button class="tab-btn" data-tab="control">爬虫控制</button>
+            </div>
+
+            <!-- Tab Content Wrapper -->
+            <div class="tab-content-wrapper">
+                <!-- Tab 1: 数据概览 -->
+                <div class="tab-panel active" data-panel="overview">
+                    <div class="charts-section">
+                        <div class="chart-card resizable-chart" data-chart="play">
+                            <div class="chart-header">
+                                <h3>播放量分布</h3>
+                                <div class="chart-controls">
+                                    <button class="btn btn-xs chart-reset-btn" title="重置大小">↺</button>
+                                </div>
+                            </div>
+                            <div class="chart-body resize-handle" data-chart="play">
+                                <div class="chart-placeholder" id="playChart"></div>
+                            </div>
+                            <div class="resize-bar" data-chart="play"></div>
+                        </div>
+                        <div class="chart-card resizable-chart" data-chart="duration">
+                            <div class="chart-header">
+                                <h3>视频时长分布</h3>
+                                <div class="chart-controls">
+                                    <button class="btn btn-xs chart-reset-btn" title="重置大小">↺</button>
+                                </div>
+                            </div>
+                            <div class="chart-body resize-handle" data-chart="duration">
+                                <div class="chart-placeholder" id="durationChart"></div>
+                            </div>
+                            <div class="resize-bar" data-chart="duration"></div>
+                        </div>
+                        <div class="chart-card resizable-chart" data-chart="time">
+                            <div class="chart-header">
+                                <h3>发布时间分布</h3>
+                                <div class="chart-controls">
+                                    <button class="btn btn-xs chart-reset-btn" title="重置大小">↺</button>
+                                </div>
+                            </div>
+                            <div class="chart-body resize-handle" data-chart="time">
+                                <div class="chart-placeholder" id="timeChart"></div>
+                            </div>
+                            <div class="resize-bar" data-chart="time"></div>
+                        </div>
+                    </div>
+
+                    <!-- Enhanced Scatter Plot Section -->
+                    <div class="scatter-section">
+                        <div class="chart-card scatter-card">
+                            <div class="chart-header">
+                                <h3>散点图控制</h3>
+                            </div>
+                            <div class="chart-body">
+                                <div class="scatter-controls">
+                                    <div class="scatter-control-row">
+                                        <div class="scatter-control-group">
+                                            <label for="scatterX">X轴</label>
+                                            <select id="scatterX" class="form-select scatter-select">
+                                                <option value="play_count">播放量</option>
+                                                <option value="like_count">点赞数</option>
+                                                <option value="duration_min" selected>时长(分钟)</option>
+                                                <option value="days_ago">发布天数</option>
+                                            </select>
+                                        </div>
+                                        <div class="scatter-control-group">
+                                            <label for="scatterY">Y轴</label>
+                                            <select id="scatterY" class="form-select scatter-select">
+                                                <option value="play_count" selected>播放量</option>
+                                                <option value="like_count">点赞数</option>
+                                                <option value="duration_min">时长(分钟)</option>
+                                                <option value="days_ago">发布天数</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="scatter-range-inputs">
+                                        <div class="range-row">
+                                            <span>X范围:</span>
+                                            <input type="number" id="xMinInput" placeholder="最小" min="0">
+                                            <span>-</span>
+                                            <input type="number" id="xMaxInput" placeholder="最大">
+                                            <label><input type="checkbox" id="xLogCheck"> 对数</label>
+                                        </div>
+                                        <div class="range-row">
+                                            <span>Y范围:</span>
+                                            <input type="number" id="yMinInput" placeholder="最小" min="0">
+                                            <span>-</span>
+                                            <input type="number" id="yMaxInput" placeholder="最大">
+                                            <label><input type="checkbox" id="yLogCheck"> 对数</label>
+                                        </div>
+                                    </div>
+                                    <div class="scatter-actions">
+                                        <button class="btn btn-primary" id="applyRangeBtn">应用范围</button>
+                                        <button class="btn btn-sm" id="resetRangeBtn" title="重置范围">重置</button>
+                                        <button class="btn btn-primary" id="drawScatterBtn">
+                                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="4" cy="12" r="2"/>
+                                                <circle cx="12" cy="4" r="2"/>
+                                                <line x1="5.5" y1="10.5" x2="10.5" y2="5.5"/>
+                                            </svg>
+                                            绘制
+                                        </button>
+                                        <button class="btn btn-sm" id="resetScatterBtn" title="重置视图">重置视图</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chart-card scatter-canvas-card">
+                            <div class="chart-header">
+                                <h3>散点图</h3>
+                                <div class="scatter-zoom-controls">
+                                    <span class="zoom-level" id="zoomLevel">100%</span>
+                                    <button class="btn btn-xs" id="zoomInBtn" title="放大">+</button>
+                                    <button class="btn btn-xs" id="zoomOutBtn" title="缩小">-</button>
+                                    <div class="zoom-slider-container">
+                                        <input type="range" id="zoomSlider" min="10" max="1000" value="100" class="zoom-slider">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chart-body scatter-body" id="scatterContainer">
+                                <canvas id="scatterCanvas"></canvas>
+                                <div class="scatter-tooltip" id="scatterTooltip"></div>
+                                <div class="scatter-empty" id="scatterEmpty">
+                                    <div class="empty-icon">📊</div>
+                                    <div>点击"绘制"按钮生成散点图</div>
+                                    <div class="empty-hint">支持滚轮缩放和滑块缩放</div>
+                                </div>
+                                <div class="scatter-legend" id="scatterLegend"></div>
+                            </div>
+                            <div class="scatter-hint">滚轮缩放 | 滑块缩放 | 点击查看详情</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: 爬虫控制 -->
+                <div class="tab-panel" data-panel="control">
+                    <div class="content-grid">
+                        <!-- Config Panel -->
+                        <section class="panel config-panel">
+                            <div class="panel-header">
+                                <h2>
+                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="4" cy="4" r="2"/>
+                                        <circle cx="16" cy="4" r="2"/>
+                                        <circle cx="4" cy="16" r="2"/>
+                                        <circle cx="16" cy="16" r="2"/>
+                                        <line x1="6" y1="4" x2="14" y2="4"/>
+                                        <line x1="6" y1="16" x2="14" y2="16"/>
+                                        <line x1="4" y1="6" x2="4" y2="14"/>
+                                        <line x1="16" y1="6" x2="16" y2="14"/>
+                                    </svg>
+                                    爬虫配置
+                                </h2>
+                                <div class="panel-actions">
+                                    <button class="btn btn-primary btn-sm" id="saveConfigBtn">
+                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M13 2L5 10l-3-3L0 9l5 5 11-11-3-3z"/>
+                                        </svg>
+                                        保存配置
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="panel-body">
+                                <form id="configForm" class="config-form">
+                                    <div class="form-group">
+                                        <label for="configKeyword">搜索关键词</label>
+                                        <input type="text" id="configKeyword" name="keyword" class="form-input" placeholder="输入搜索关键词">
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="configOrder">排序方式</label>
+                                            <select id="configOrder" name="order" class="form-select">
+                                                <option value="pubdate">最新发布</option>
+                                                <option value="click">最多播放</option>
+                                                <option value="stow">最多收藏</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="configTarget">目标数量</label>
+                                            <input type="number" id="configTarget" name="target_count" class="form-input" min="1">
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="configPageSize">每页大小</label>
+                                            <input type="number" id="configPageSize" name="page_size" class="form-input" min="1" max="50">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="configMaxPages">最大页数/次</label>
+                                            <input type="number" id="configMaxPages" name="max_pages_per_run" class="form-input" min="1">
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="configLastPage">起始页码</label>
+                                            <input type="number" id="configLastPage" name="last_page" class="form-input" min="1">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="configMaxPages">&nbsp;</label>
+                                            <span class="form-hint">从第几页开始爬取</span>
+                                        </div>
+                                    </div>
+                                    <div class="config-divider"></div>
+                                    <div class="form-section-title">24小时内筛选</div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="configMaxHours">最大小时数</label>
+                                            <input type="number" id="configMaxHours" name="max_hours" class="form-input" min="1">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="configPlayPerHour">最小播放/小时</label>
+                                            <input type="number" id="configPlayPerHour" name="min_play_per_hour" class="form-input" min="0">
+                                        </div>
+                                    </div>
+                                    <div class="form-section-title">超过24小时筛选</div>
+                                    <div class="form-group">
+                                        <label for="configMinPlay">最小总播放量</label>
+                                        <input type="number" id="configMinPlay" name="min_play_count" class="form-input" min="0">
+                                    </div>
+                                    <div class="config-divider"></div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="configRequestInterval">请求间隔(秒)</label>
+                                            <input type="number" id="configRequestInterval" name="request_interval" class="form-input" min="0" step="0.1">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="configIntervalMinutes">间隔分钟</label>
+                                            <input type="number" id="configIntervalMinutes" name="interval_minutes" class="form-input" min="0">
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </section>
+
+                        <!-- Status Panel -->
+                        <section class="panel status-panel">
+                            <div class="panel-header">
+                                <h2>
+                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="2" y="3" width="16" height="14" rx="2"/>
+                                        <line x1="2" y1="8" x2="18" y2="8"/>
+                                        <line x1="6" y1="3" x2="6" y2="8"/>
+                                        <line x1="14" y1="3" x2="14" y2="8"/>
+                                    </svg>
+                                    运行状态
+                                </h2>
+                                <div class="panel-actions">
+                                    <button class="btn btn-sm" id="refreshStatusBtn">刷新</button>
+                                </div>
+                            </div>
+                            <div class="panel-body">
+                                <div class="status-grid">
+                                    <div class="status-item">
+                                        <span class="status-label">当前页码</span>
+                                        <span class="status-value" id="currentPage">1</span>
+                                    </div>
+                                    <div class="status-item">
+                                        <span class="status-label">本次新增</span>
+                                        <span class="status-value" id="newVideos">0</span>
+                                    </div>
+                                    <div class="status-item">
+                                        <span class="status-label">运行状态</span>
+                                        <span class="status-badge" id="runStatus">空闲</span>
+                                    </div>
+                                    <div class="status-item">
+                                        <span class="status-label">请求间隔</span>
+                                        <span class="status-value" id="requestInterval">0.5s</span>
+                                    </div>
+                                </div>
+                                <div class="progress-section">
+                                    <div class="progress-header">
+                                        <span>爬取进度</span>
+                                        <span id="progressText">0/100</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Log Panel -->
+                        <section class="panel log-panel">
+                            <div class="panel-header">
+                                <h2>
+                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                        <polyline points="14 2 14 8 20 8"/>
+                                        <line x1="8" y1="13" x2="12" y2="13"/>
+                                        <line x1="8" y1="17" x2="12" y2="17"/>
+                                    </svg>
+                                    运行日志
+                                </h2>
+                                <div class="panel-actions">
+                                    <button class="btn btn-sm" id="clearLogBtn">清空</button>
+                                </div>
+                            </div>
+                            <div class="panel-body log-body">
+                                <div class="log-container" id="logContainer">
+                                    <div class="log-entry info">
+                                        <span class="log-time">[--:--:--]</span>
+                                        <span class="log-msg">等待爬虫启动...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
+                <!-- Tab 3: 结果查看 -->
+                <div class="tab-panel" data-panel="results">
+                    <section class="panel filter-panel">
+                        <div class="panel-header">
+                            <h2>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="22 3 2 3 10 12.22 10 19 22 19 22 3 10 12.22 22 3"/>
+                                </svg>
+                                筛选条件
+                            </h2>
+                        </div>
+                        <div class="panel-body">
+                            <!-- Filter Bar -->
+                            <div class="filter-bar">
+                                <div class="filter-group">
+                                    <label>时长:</label>
+                                    <div class="filter-buttons" id="durationFilter">
+                                        <button class="filter-btn" data-filter="all" data-type="duration">全部</button>
+                                        <button class="filter-btn" data-filter="lt_5min" data-type="duration">&lt;5分钟</button>
+                                        <button class="filter-btn" data-filter="5_15min" data-type="duration">5-15分钟</button>
+                                        <button class="filter-btn" data-filter="15_30min" data-type="duration">15-30分钟</button>
+                                        <button class="filter-btn" data-filter="gt_30min" data-type="duration">&gt;30分钟</button>
+                                    </div>
+                                </div>
+                                <div class="filter-group">
+                                    <label>播放量:</label>
+                                    <div class="filter-buttons" id="playFilter">
+                                        <button class="filter-btn active" data-filter="all" data-type="play">全部</button>
+                                        <button class="filter-btn" data-filter="100000" data-type="play">&gt;10万</button>
+                                        <button class="filter-btn" data-filter="200000" data-type="play">&gt;20万</button>
+                                        <button class="filter-btn" data-filter="500000" data-type="play">&gt;50万</button>
+                                        <button class="filter-btn" data-filter="1000000" data-type="play">&gt;100万</button>
+                                    </div>
+                                </div>
+                                <div class="filter-group search-group">
+                                    <input type="text" class="search-input" id="searchInput" placeholder="搜索视频标题或作者...">
+                                    <button class="btn btn-sm clear-search" id="clearSearchBtn" style="display:none;">×</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Tab 4: 关键词分析 -->
+                <div class="tab-panel" data-panel="keywords">
+                    <section class="panel keyword-panel">
+                        <div class="panel-header">
+                            <h2>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 6h12M4 10h8M4 14h10"/>
+                                </svg>
+                                标题关键词分析
+                                <span class="badge" id="keywordCount">0</span>
+                            </h2>
+                            <div class="panel-actions">
+                                <button class="btn btn-sm" id="refreshKeywordBtn">刷新</button>
+                            </div>
+                        </div>
+                        <div class="panel-body">
+                            <div class="keyword-stats" id="keywordStats">
+                                <div class="keyword-stat-item">
+                                    <span class="keyword-label">高播放关键词</span>
+                                    <span class="keyword-value" id="topKeyword">--</span>
+                                </div>
+                                <div class="keyword-stat-item">
+                                    <span class="keyword-label">高播放均值</span>
+                                    <span class="keyword-value" id="topKeywordAvg">--</span>
+                                </div>
+                            </div>
+                            <div class="keyword-cloud" id="keywordCloud">
+                                <div class="keyword-loading">正在分析标题...</div>
+                            </div>
+                            <div class="keyword-selected" id="keywordSelected" style="display:none;">
+                                <span>当前筛选: </span>
+                                <span class="keyword-tag" id="selectedKeyword"></span>
+                                <button class="btn btn-xs" id="clearKeywordFilter">清除</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Videos List Panel - Global, always visible at bottom -->
+            <section class="panel videos-panel" id="videosPanelGlobal">
+                <div class="panel-header">
+                    <h2>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="14" height="14" rx="2"/>
+                            <line x1="3" y1="9" x2="17" y2="9"/>
+                            <line x1="9" y1="3" x2="9" y2="17"/>
+                        </svg>
+                        爬取结果
+                        <span class="badge" id="videosCount">0</span>
+                    </h2>
+                    <div class="panel-actions">
+                        <div class="view-toggle">
+                            <button class="btn btn-sm view-btn active" id="listViewBtn" title="列表视图">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="3" y1="4" x2="13" y2="4"/>
+                                    <line x1="3" y1="8" x2="13" y2="8"/>
+                                    <line x1="3" y1="12" x2="13" y2="12"/>
+                                </svg>
+                            </button>
+                            <button class="btn btn-sm view-btn" id="topViewBtn" title="TOP视图">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="8 2 12 6 8 10 4 6 8 2"/>
+                                    <line x1="8" y1="10" x2="8" y2="14"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <button class="btn btn-sm" id="exportBtn">导出JSON</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="videos-table" id="videosTable">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-sort="index">#</th>
+                                <th class="sortable" data-sort="title">标题</th>
+                                <th class="sortable" data-sort="author">作者</th>
+                                <th class="sortable" data-sort="play_count">播放量</th>
+                                <th class="sortable" data-sort="like_count">点赞</th>
+                                <th class="sortable" data-sort="pubdate">发布时间</th>
+                                <th class="sortable" data-sort="duration">时长</th>
+                                <th>类型</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="videosTableBody">
+                            <tr class="empty-row">
+                                <td colspan="9" class="empty-message">暂无数据</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <button class="btn btn-sm" id="prevPageBtn" disabled>上一页</button>
+                    <span class="page-info">第 <span id="currentPageNum">1</span> / <span id="totalPages">1</span> 页</span>
+                    <button class="btn btn-sm" id="nextPageBtn" disabled>下一页</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <span>B站视频爬虫 WebUI v2.0</span>
+            <span>|</span>
+            <span>端口: 30001</span>
+        </footer>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <script>
+        // ============================================
+        // B站视频爬虫 WebUI - JavaScript
+        // ============================================
+
+        const API_BASE = '';
+
+        // State
+        let currentPage = 1;
+        let pageSize = 20;
+        let totalPages = 1;
+        let totalVideos = 0;
+        let searchQuery = '';
+        let allVideos = [];
+        let filteredVideos = [];
+        let spiderRunning = false;
+        let refreshInterval = null;
+        let currentSort = 'play_count';
+        let currentOrder = 'desc';
+        
+        // Filter State
+        let durationFilter = 'all';
+        let playFilter = 'all';
+        let keywordFilter = null;
+        let viewMode = 'list'; // 'list' or 'top'
+        
+        // Chart resize state
+        let chartHeights = { play: 180, duration: 180, time: 180 };
+        const MIN_CHART_HEIGHT = 100;
+        const MAX_CHART_HEIGHT = 400;
+        const DEFAULT_CHART_HEIGHT = 180;
+
+        // Scatter plot state
+        let scatterZoom = 1; // 1 = 100%, ranges from 0.1 (10%) to 10 (1000%)
+        let scatterPanX = 0;
+        let scatterPanY = 0;
+        let isDraggingScatter = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        let scatterData = [];
+        let scatterOriginalData = [];
+        // Store original auto ranges for slider reference
+        let autoRangeXMin = 0, autoRangeXMax = 60;
+        let autoRangeYMin = 0, autoRangeYMax = 60;
+
+        // DOM Elements
+        const elements = {
+            // Buttons
+            runSpiderBtn: document.getElementById('runSpiderBtn'),
+            refreshStatusBtn: document.getElementById('refreshStatusBtn'),
+            clearLogBtn: document.getElementById('clearLogBtn'),
+            exportBtn: document.getElementById('exportBtn'),
+            prevPageBtn: document.getElementById('prevPageBtn'),
+            nextPageBtn: document.getElementById('nextPageBtn'),
+            saveConfigBtn: document.getElementById('saveConfigBtn'),
+            drawScatterBtn: document.getElementById('drawScatterBtn'),
+            resetScatterBtn: document.getElementById('resetScatterBtn'),
+            zoomInBtn: document.getElementById('zoomInBtn'),
+            zoomOutBtn: document.getElementById('zoomOutBtn'),
+            listViewBtn: document.getElementById('listViewBtn'),
+            topViewBtn: document.getElementById('topViewBtn'),
+            clearSearchBtn: document.getElementById('clearSearchBtn'),
+            clearKeywordFilter: document.getElementById('clearKeywordFilter'),
+            refreshKeywordBtn: document.getElementById('refreshKeywordBtn'),
+
+            // Stats
+            totalVideos: document.getElementById('totalVideos'),
+            totalPlays: document.getElementById('totalPlays'),
+            totalLikes: document.getElementById('totalLikes'),
+            lastRunTime: document.getElementById('lastRunTime'),
+
+            // Config Form
+            configForm: document.getElementById('configForm'),
+            configKeyword: document.getElementById('configKeyword'),
+            configOrder: document.getElementById('configOrder'),
+            configTarget: document.getElementById('configTarget'),
+            configPageSize: document.getElementById('configPageSize'),
+            configMaxHours: document.getElementById('configMaxHours'),
+            configPlayPerHour: document.getElementById('configPlayPerHour'),
+            configMinPlay: document.getElementById('configMinPlay'),
+            configMaxPages: document.getElementById('configMaxPages'),
+            configLastPage: document.getElementById('configLastPage'),
+            configRequestInterval: document.getElementById('configRequestInterval'),
+            configIntervalMinutes: document.getElementById('configIntervalMinutes'),
+
+            // Scatter Plot
+            scatterX: document.getElementById('scatterX'),
+            scatterY: document.getElementById('scatterY'),
+            scatterCanvas: document.getElementById('scatterCanvas'),
+            scatterTooltip: document.getElementById('scatterTooltip'),
+            scatterEmpty: document.getElementById('scatterEmpty'),
+            scatterContainer: document.getElementById('scatterContainer'),
+            scatterLegend: document.getElementById('scatterLegend'),
+            zoomLevel: document.getElementById('zoomLevel'),
+            zoomSlider: document.getElementById('zoomSlider'),
+
+            // Status
+            spiderStatus: document.getElementById('spiderStatus'),
+            currentPage: document.getElementById('currentPage'),
+            newVideos: document.getElementById('newVideos'),
+            runStatus: document.getElementById('runStatus'),
+            requestInterval: document.getElementById('requestInterval'),
+            progressText: document.getElementById('progressText'),
+            progressFill: document.getElementById('progressFill'),
+
+            // Log
+            logContainer: document.getElementById('logContainer'),
+
+            // Charts
+            playChart: document.getElementById('playChart'),
+            durationChart: document.getElementById('durationChart'),
+            timeChart: document.getElementById('timeChart'),
+
+            // Keywords
+            keywordCloud: document.getElementById('keywordCloud'),
+            keywordCount: document.getElementById('keywordCount'),
+            topKeyword: document.getElementById('topKeyword'),
+            topKeywordAvg: document.getElementById('topKeywordAvg'),
+            keywordSelected: document.getElementById('keywordSelected'),
+            selectedKeyword: document.getElementById('selectedKeyword'),
+
+            // Table
+            videosTableBody: document.getElementById('videosTableBody'),
+            videosCount: document.getElementById('videosCount'),
+
+            // Pagination
+            currentPageNum: document.getElementById('currentPageNum'),
+            totalPages: document.getElementById('totalPages'),
+
+            // Search
+            searchInput: document.getElementById('searchInput'),
+
+            // Toast
+            toastContainer: document.getElementById('toastContainer')
+        };
+
+        // Utility Functions
+        function formatNumber(num) {
+            if (num >= 100000000) return (num / 100000000).toFixed(1) + '亿';
+            if (num >= 10000) return (num / 10000).toFixed(1) + 'w';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
+            return num.toString();
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp * 1000);
+            return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        function formatDate(timestamp) {
+            const date = new Date(timestamp * 1000);
+            return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        }
+
+        async function apiRequest(url, options = {}) {
+            try {
+                const response = await fetch(API_BASE + url, options);
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                showToast('网络错误: ' + error.message, 'error');
+                return { code: -1, message: error.message };
+            }
+        }
+
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                    ${type === 'success' ? '<path d="M13 2L5 10l-3-3L0 9l5 5 11-11-3-3z"/>' :
+                      type === 'error' ? '<circle cx="8" cy="8" r="6"/><line x1="8" y1="5" x2="8" y2="8"/><line x1="8" y1="11" x2="8.01" y2="11"/>' :
+                      '<circle cx="8" cy="8" r="6"/><line x1="8" y1="5" x2="8" y2="8"/><line x1="8" y1="11" x2="8.01" y2="11"/>'}
+                </svg>
+                <span>${message}</span>
+            `;
+            elements.toastContainer.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Update Spider Status UI
+        function updateSpiderStatus(running) {
+            spiderRunning = running;
+            const statusDot = elements.spiderStatus.querySelector('.status-dot');
+            const statusText = elements.spiderStatus.querySelector('.status-text');
+            const btnText = elements.runSpiderBtn;
+
+            if (running) {
+                statusDot.className = 'status-dot running';
+                statusText.textContent = '运行中';
+                btnText.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <rect x="4" y="3" width="8" height="10" rx="1"/>
+                    </svg>
+                    停止爬虫
+                `;
+            } else {
+                statusDot.className = 'status-dot idle';
+                statusText.textContent = '空闲';
+                btnText.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M4 2L14 8L4 14V2Z"/>
+                    </svg>
+                    启动爬虫
+                `;
+            }
+        }
+
+        // Load Stats Data
+        async function loadStats() {
+            const result = await apiRequest('/api/stats');
+            if (result.code === 0 && result.data) {
+                const data = result.data;
+                elements.totalVideos.textContent = formatNumber(data.total_videos || 0);
+                elements.totalPlays.textContent = formatNumber(data.total_plays || 0);
+                elements.totalLikes.textContent = formatNumber(data.total_likes || 0);
+                elements.lastRunTime.textContent = data.last_run || '--';
+
+                renderPlayChart(data.play_distribution || {});
+                renderDurationChart(data.duration_distribution || {});
+                renderTimeChart(data.time_distribution || {});
+            }
+        }
+
+        // Render Play Distribution Chart
+        function renderPlayChart(distribution) {
+            // Sort by value descending, then by label for consistent display
+            const entries = Object.entries(distribution);
+            entries.sort((a, b) => {
+                if (b[1] !== a[1]) return b[1] - a[1];
+                return a[0].localeCompare(b[0]);
+            });
+            const labels = entries.map(e => e[0]);
+            const values = entries.map(e => e[1]);
+            const maxValue = Math.max(...values, 1);
+            const total = values.reduce((a, b) => a + b, 0);
+
+            if (labels.length === 0) {
+                elements.playChart.innerHTML = '<div class="chart-empty">暂无数据</div>';
+                return;
+            }
+
+            const container = document.createElement('div');
+            container.className = 'bar-chart-container';
+
+            const yAxis = document.createElement('div');
+            yAxis.className = 'chart-y-axis';
+            const yTicks = 5;
+            for (let i = yTicks; i >= 0; i--) {
+                const tick = document.createElement('div');
+                tick.className = 'y-tick';
+                const value = Math.round(maxValue * i / yTicks);
+                tick.textContent = value >= 1000 ? (value / 1000).toFixed(0) + 'K' : value;
+                yAxis.appendChild(tick);
+            }
+
+            const chartArea = document.createElement('div');
+            chartArea.className = 'bar-chart-area';
+
+            const barChart = document.createElement('div');
+            barChart.className = 'bar-chart';
+
+            const gradientColors = [
+                'var(--accent-blue)',
+                'var(--accent-blue-light)',
+                'var(--accent-purple)',
+                'var(--accent-green)',
+                'var(--accent-orange)',
+                'var(--accent-red)'
+            ];
+
+            labels.forEach((label, i) => {
+                const rawHeight = (values[i] / maxValue) * chartHeights.play;
+                const height = Math.max(rawHeight, 4);
+                const percent = ((values[i] / total) * 100).toFixed(1);
+                const barWrapper = document.createElement('div');
+                barWrapper.className = 'bar-wrapper';
+
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.style.height = height + 'px';
+                bar.style.background = `linear-gradient(180deg, ${gradientColors[i % gradientColors.length]}, ${gradientColors[(i + 1) % gradientColors.length]})`;
+                bar.dataset.label = label;
+                bar.dataset.value = values[i];
+                bar.dataset.percent = percent;
+                bar.title = `${label}: ${values[i]} (${percent}%)`;
+
+                const barLabel = document.createElement('div');
+                barLabel.className = 'bar-label';
+                barLabel.textContent = values[i].toLocaleString();
+
+                barWrapper.appendChild(bar);
+                barWrapper.appendChild(barLabel);
+                barChart.appendChild(barWrapper);
+            });
+
+            const chartLabels = document.createElement('div');
+            chartLabels.className = 'chart-labels';
+            labels.forEach(label => {
+                const span = document.createElement('span');
+                span.textContent = label;
+                chartLabels.appendChild(span);
+            });
+
+            chartArea.appendChild(yAxis);
+            chartArea.appendChild(barChart);
+            container.appendChild(chartArea);
+            container.appendChild(chartLabels);
+
+            elements.playChart.innerHTML = '';
+            elements.playChart.appendChild(container);
+        }
+
+        // Render Duration Distribution Chart
+        function renderDurationChart(distribution) {
+            const labels = {
+                'lt_1min': '<1分钟',
+                '1_5min': '1-5分钟',
+                '5_15min': '5-15分钟',
+                '15_30min': '15-30分钟',
+                'gt_30min': '>30分钟'
+            };
+            const colors = {
+                'lt_1min': '#00A1D6',
+                '1_5min': '#23D4FF',
+                '5_15min': '#7B61FF',
+                '15_30min': '#FF6B6B',
+                'gt_30min': '#FFB84D'
+            };
+
+            const total = Object.values(distribution).reduce((a, b) => a + b, 0) || 1;
+
+            if (total === 0) {
+                elements.durationChart.innerHTML = '<div class="chart-empty">暂无数据</div>';
+                return;
+            }
+
+            let gradientParts = [];
+            let currentAngle = 0;
+
+            Object.entries(distribution).forEach(([key, value]) => {
+                if (value > 0) {
+                    const percent = (value / total) * 100;
+                    const color = colors[key] || '#888';
+                    gradientParts.push(`${color} ${currentAngle}% ${currentAngle + percent}%`);
+                    currentAngle += percent;
+                }
+            });
+
+            const donutChart = document.createElement('div');
+            donutChart.className = 'donut-chart';
+
+            const donutSegment = document.createElement('div');
+            donutSegment.className = 'donut-segment';
+            donutSegment.style.background = `conic-gradient(${gradientParts.join(', ')})`;
+            donutChart.appendChild(donutSegment);
+
+            const legend = document.createElement('div');
+            legend.className = 'donut-legend';
+
+            Object.entries(distribution).forEach(([key, value]) => {
+                const percent = ((value / total) * 100).toFixed(1);
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                item.innerHTML = `
+                    <span class="legend-dot" style="background: ${colors[key]}"></span>
+                    <span class="legend-label">${labels[key]}</span>
+                    <span class="legend-value">${value}</span>
+                    <span class="legend-percent">(${percent}%)</span>
+                `;
+                legend.appendChild(item);
+            });
+
+            donutChart.appendChild(legend);
+
+            elements.durationChart.innerHTML = '';
+            elements.durationChart.appendChild(donutChart);
+        }
+
+        // Render Time Distribution Chart
+        function renderTimeChart(distribution) {
+            const labels = {
+                'today': '今天',
+                'yesterday': '昨天',
+                '2_3days': '2-3天',
+                '3_7days': '3-7天',
+                'gt_7days': '>7天'
+            };
+            const colors = {
+                'today': '#23D4FF',
+                'yesterday': '#00A1D6',
+                '2_3days': '#7B61FF',
+                '3_7days': '#FF6B6B',
+                'gt_7days': '#FFB84D'
+            };
+            // Sort by value descending for consistent display
+            const order = ['gt_7days', '3_7days', '2_3days', 'yesterday', 'today'];
+            const values = order.map(k => distribution[k] || 0);
+            const total = values.reduce((a, b) => a + b, 0) || 1;
+            const maxValue = Math.max(...values, 1);
+
+            const container = document.createElement('div');
+            container.className = 'timeline-chart-container';
+
+            const yAxis = document.createElement('div');
+            yAxis.className = 'chart-y-axis';
+            const yTicks = 5;
+            for (let i = yTicks; i >= 0; i--) {
+                const tick = document.createElement('div');
+                tick.className = 'y-tick';
+                const value = Math.round(maxValue * i / yTicks);
+                tick.textContent = value >= 1000 ? (value / 1000).toFixed(0) + 'K' : value;
+                yAxis.appendChild(tick);
+            }
+
+            const timelineChart = document.createElement('div');
+            timelineChart.className = 'timeline-chart';
+
+            order.forEach(key => {
+                const value = distribution[key] || 0;
+                const width = (value / maxValue) * 100;
+                const percent = ((value / total) * 100).toFixed(1);
+                const barWrapper = document.createElement('div');
+                barWrapper.className = 'timeline-bar-wrapper';
+
+                const bar = document.createElement('div');
+                bar.className = 'timeline-bar';
+                bar.style.width = Math.max(width, 5) + '%';
+                bar.style.setProperty('--color', colors[key] || '#888');
+                bar.dataset.label = labels[key];
+                bar.dataset.value = value;
+                bar.dataset.percent = percent;
+                bar.title = `${labels[key]}: ${value} (${percent}%)`;
+
+                const barLabel = document.createElement('div');
+                barLabel.className = 'timeline-bar-label';
+                barLabel.textContent = value.toLocaleString();
+                bar.appendChild(barLabel);
+
+                barWrapper.appendChild(bar);
+                timelineChart.appendChild(barWrapper);
+            });
+
+            const chartLabels = document.createElement('div');
+            chartLabels.className = 'timeline-labels';
+
+            order.forEach(key => {
+                const span = document.createElement('span');
+                span.textContent = labels[key];
+                chartLabels.appendChild(span);
+            });
+
+            const chartArea = document.createElement('div');
+            chartArea.className = 'chart-area-with-axis';
+            chartArea.appendChild(yAxis);
+            chartArea.appendChild(timelineChart);
+
+            container.appendChild(chartArea);
+            container.appendChild(chartLabels);
+
+            elements.timeChart.innerHTML = '';
+            elements.timeChart.appendChild(container);
+        }
+
+        // Load all videos
+        async function loadAllVideos() {
+            const result = await apiRequest('/api/videos?page=1&page_size=10000');
+            if (result.code === 0 && result.data) {
+                allVideos = result.data.videos || [];
+                filteredVideos = [...allVideos];
+                applyFilters();
+                analyzeKeywords();
+            }
+        }
+
+        // Load videos with pagination
+        async function loadVideos() {
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const displayVideos = viewMode === 'top' 
+                ? filteredVideos.slice(0, 50) 
+                : filteredVideos.slice(start, end);
+
+            renderVideosTable(displayVideos, viewMode === 'top');
+            updatePagination(filteredVideos.length);
+        }
+
+        // Apply filters
+        function applyFilters() {
+            let result = [...allVideos];
+
+            // Duration filter
+            if (durationFilter !== 'all') {
+                result = result.filter(v => {
+                    const mins = parseDurationToMinutes(v.duration);
+                    switch (durationFilter) {
+                        case 'lt_5min': return mins < 5;
+                        case '5_15min': return mins >= 5 && mins < 15;
+                        case '15_30min': return mins >= 15 && mins < 30;
+                        case 'gt_30min': return mins >= 30;
+                        default: return true;
+                    }
+                });
+            }
+
+            // Play count filter
+            if (playFilter !== 'all') {
+                const threshold = parseInt(playFilter);
+                result = result.filter(v => (v.play_count || 0) >= threshold);
+            }
+
+            // Search filter
+            if (searchQuery) {
+                const q = searchQuery.toLowerCase();
+                result = result.filter(v => 
+                    (v.title || '').toLowerCase().includes(q) ||
+                    (v.author || '').toLowerCase().includes(q)
+                );
+            }
+
+            // Keyword filter
+            if (keywordFilter) {
+                const kw = keywordFilter.toLowerCase();
+                result = result.filter(v => 
+                    (v.title || '').toLowerCase().includes(kw)
+                );
+            }
+
+            // Sort
+            result.sort((a, b) => {
+                let aVal = a[currentSort] || 0;
+                let bVal = b[currentSort] || 0;
+                return currentOrder === 'desc' ? bVal - aVal : aVal - bVal;
+            });
+
+            filteredVideos = result;
+            currentPage = 1;
+            updateStats();
+            loadVideos();
+        }
+
+        function parseDurationToMinutes(duration) {
+            if (!duration || duration === '--') return 0;
+            const parts = duration.split(':');
+            const minutes = parseInt(parts[0]) || 0;
+            if (parts.length === 2) {
+                // MM:SS format
+                return minutes + parseInt(parts[1]) / 60;
+            } else if (parts.length === 3) {
+                // HH:MM:SS format
+                return parseInt(parts[0]) * 60 + parseInt(parts[1]) + parseInt(parts[2]) / 60;
+            }
+            return minutes;
+        }
+
+        // Update stats
+        function updateStats() {
+            const total = filteredVideos.length;
+            const plays = filteredVideos.reduce((sum, v) => sum + (v.play_count || 0), 0);
+            const likes = filteredVideos.reduce((sum, v) => sum + (v.like_count || 0), 0);
+            
+            elements.totalVideos.textContent = formatNumber(total);
+            elements.totalPlays.textContent = formatNumber(plays);
+            elements.totalLikes.textContent = formatNumber(likes);
+        }
+
+        // Analyze keywords from titles
+        function analyzeKeywords() {
+            // Smaller stop word list - only pure functional words
+            const stopWords = new Set(['的', '了', '是', '在', '我', '有', '和', '就', '不', '人', '都', '一', '一个', '上', '也', '很', '到', '说', '要', '去', '会', '着', '没有', '看', '好', '自己', '这', '那', '么', '它', '什么', '怎么', '为什么', '如何', '如果']);
+
+            // Important phrase patterns to detect (order matters - longer phrases first)
+            const phrasePatterns = [
+                '以防你不知道', '以防你', '以防',
+                '假如观者', '假如',
+                '一回合', '两回合', '一回杀',
+                '进阶10', '进阶',
+                '零氪', '无伤', '速通',
+                'mod', 'Mod', 'MOD',
+                '杀戮尖塔2', '杀戮尖塔',
+                '新手', '入门', '教学', '攻略',
+                '机宝', '猎人', '战士', '猎手', '储君',
+                '珊瑚', '小提琴', '七星',
+                '商店', '无限'
+            ];
+
+            // Build a set of phrases for quick lookup
+            const phraseSet = new Set(phrasePatterns.map(p => p.toLowerCase()));
+
+            const wordCount = {};
+
+            allVideos.forEach(video => {
+                const title = video.title || '';
+                const titleLower = title.toLowerCase();
+                const plays = video.play_count || 0;
+
+                // First, extract phrase patterns (longer matches first)
+                for (const phrase of phrasePatterns) {
+                    if (titleLower.includes(phrase.toLowerCase())) {
+                        const key = phrase.toLowerCase();
+                        if (!wordCount[key]) {
+                            wordCount[key] = { count: 0, totalPlays: 0 };
+                        }
+                        wordCount[key].count++;
+                        wordCount[key].totalPlays += plays;
+                    }
+                }
+
+                // Then extract 2-4 character Chinese words not already captured
+                const words = title.match(/[\u4e00-\u9fa5]{2,4}/g) || [];
+                words.forEach(word => {
+                    const lowerWord = word.toLowerCase();
+                    // Skip if already captured by phrase or is stop word
+                    if (phraseSet.has(lowerWord) || stopWords.has(word)) {
+                        return;
+                    }
+                    // Skip if word is contained in already counted phrases
+                    let alreadyCounted = false;
+                    for (const phrase of phrasePatterns) {
+                        if (lowerWord.length < phrase.length && phrase.includes(lowerWord)) {
+                            alreadyCounted = true;
+                            break;
+                        }
+                    }
+                    if (alreadyCounted) return;
+
+                    if (!wordCount[lowerWord]) {
+                        wordCount[lowerWord] = { count: 0, totalPlays: 0 };
+                    }
+                    wordCount[lowerWord].count++;
+                    wordCount[lowerWord].totalPlays += plays;
+                });
+            });
+
+            // Calculate average and find top keywords
+            const keywords = Object.entries(wordCount)
+                .filter(([word, data]) => data.count >= 3)
+                .map(([word, data]) => ({
+                    word,
+                    count: data.count,
+                    avgPlays: Math.round(data.totalPlays / data.count)
+                }))
+                .sort((a, b) => {
+                    // Sort by count first (more popular keywords first)
+                    if (b.count !== a.count) return b.count - a.count;
+                    // Then by average plays
+                    return b.avgPlays - a.avgPlays;
+                });
+
+            renderKeywordCloud(keywords);
+        }
+
+        function renderKeywordCloud(keywords) {
+            elements.keywordCount.textContent = keywords.length;
+            
+            if (keywords.length === 0) {
+                elements.keywordCloud.innerHTML = '<div class="keyword-empty">暂无关键词数据</div>';
+                return;
+            }
+
+            // Show top keyword stats
+            if (keywords.length > 0) {
+                elements.topKeyword.textContent = keywords[0].word;
+                elements.topKeywordAvg.textContent = formatNumber(keywords[0].avgPlays);
+            }
+
+            const maxCount = Math.max(...keywords.map(k => k.count));
+            const maxAvg = Math.max(...keywords.map(k => k.avgPlays));
+
+            const cloud = document.createElement('div');
+            cloud.className = 'keyword-list';
+
+            keywords.slice(0, 30).forEach(kw => {
+                const size = 0.8 + (kw.avgPlays / maxAvg) * 0.8;
+                const item = document.createElement('div');
+                item.className = 'keyword-item';
+                item.style.fontSize = size + 'rem';
+                item.innerHTML = `
+                    <span class="keyword-word">${kw.word}</span>
+                    <span class="keyword-stats">${kw.count}个 | ${formatNumber(kw.avgPlays)}均播</span>
+                `;
+                item.title = `点击筛选"${kw.word}"相关视频`;
+                item.addEventListener('click', () => {
+                    if (keywordFilter === kw.word) {
+                        clearKeywordFilter();
+                    } else {
+                        setKeywordFilter(kw.word);
+                    }
+                });
+                cloud.appendChild(item);
+            });
+
+            elements.keywordCloud.innerHTML = '';
+            elements.keywordCloud.appendChild(cloud);
+        }
+
+        function setKeywordFilter(keyword) {
+            keywordFilter = keyword;
+            elements.selectedKeyword.textContent = keyword;
+            elements.keywordSelected.style.display = 'flex';
+            applyFilters();
+        }
+
+        function clearKeywordFilter() {
+            keywordFilter = null;
+            elements.keywordSelected.style.display = 'none';
+            applyFilters();
+        }
+
+        // Render Videos Table
+        function renderVideosTable(videos, isTopView = false) {
+            elements.videosTableBody.innerHTML = '';
+            elements.videosCount.textContent = filteredVideos.length;
+
+            if (videos.length === 0) {
+                const row = document.createElement('tr');
+                row.className = 'empty-row';
+                row.innerHTML = '<td colspan="9" class="empty-message">暂无数据</td>';
+                elements.videosTableBody.appendChild(row);
+                return;
+            }
+
+            videos.forEach((video, index) => {
+                const row = document.createElement('tr');
+                row.setAttribute('data-bvid', video.bvid);
+                
+                const isHighPlay = (video.play_count || 0) > 500000;
+                if (isHighPlay) row.classList.add('high-play-row');
+                
+                const rank = isTopView ? index + 1 : (currentPage - 1) * pageSize + index + 1;
+                const filterTagClass = video.filter_type === 'play_per_hour' ? 'play_per_hour' : 'total';
+                const filterTagText = video.filter_type === 'play_per_hour' ? 'per_hour' : 'total';
+
+                row.innerHTML = `
+                    ${isTopView ? `<td class="rank-cell">${getRankBadge(rank)}</td>` : `<td>${rank}</td>`}
+                    <td class="title-cell">
+                        <a href="${video.url}" target="_blank" title="${video.title}">${video.title}</a>
+                    </td>
+                    <td>${video.author || '--'}</td>
+                    <td class="num-cell ${isHighPlay ? 'highlight' : ''}">${(video.play_count || 0).toLocaleString()}</td>
+                    <td class="num-cell">${(video.like_count || 0).toLocaleString()}</td>
+                    <td>${video.pubdate_str || formatDate(video.pubdate)}</td>
+                    <td>${video.duration || '--'}</td>
+                    <td><span class="filter-tag ${filterTagClass}">${filterTagText}</span></td>
+                    <td>
+                        <a href="${video.url}" target="_blank" class="action-btn" title="查看视频">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 3l8 5-8 5V3z"/>
+                            </svg>
+                        </a>
+                    </td>
+                `;
+                elements.videosTableBody.appendChild(row);
+            });
+        }
+
+        function getRankBadge(rank) {
+            if (rank <= 3) {
+                return `<span class="rank-badge rank-${rank}">${rank}</span>`;
+            }
+            return `<span class="rank-number">${rank}</span>`;
+        }
+
+        // Update Pagination
+        function updatePagination(total) {
+            elements.currentPageNum.textContent = currentPage;
+            elements.totalPages.textContent = totalPages;
+            elements.videosCount.textContent = total;
+            
+            if (viewMode === 'top') {
+                elements.prevPageBtn.style.display = 'none';
+                elements.nextPageBtn.style.display = 'none';
+            } else {
+                elements.prevPageBtn.style.display = '';
+                elements.nextPageBtn.style.display = '';
+                elements.prevPageBtn.disabled = currentPage <= 1;
+                elements.nextPageBtn.disabled = currentPage >= totalPages;
+            }
+        }
+
+        // Load Config
+        async function loadConfig() {
+            const result = await apiRequest('/api/config');
+            if (result.code === 0 && result.data) {
+                const config = result.data;
+                elements.configKeyword.value = config.keyword || '';
+                elements.configOrder.value = config.order || 'pubdate';
+                elements.configTarget.value = config.target_count || 100;
+                elements.configPageSize.value = config.page_size || 30;
+                elements.configMaxHours.value = (config.filter && config.filter.within_24h) ? config.filter.within_24h.max_hours || 24 : 24;
+                elements.configPlayPerHour.value = (config.filter && config.filter.within_24h) ? config.filter.within_24h.min_play_per_hour || 2000 : 2000;
+                elements.configMinPlay.value = (config.filter && config.filter.beyond_24h) ? config.filter.beyond_24h.min_play_count || 20000 : 20000;
+                elements.configMaxPages.value = config.max_pages_per_run || 100;
+                elements.configLastPage.value = config.last_page || 1;
+                elements.configRequestInterval.value = config.request_interval || 0.5;
+                elements.configIntervalMinutes.value = config.interval_minutes || 0;
+            }
+        }
+
+        // Save Config
+        async function saveConfig() {
+            const configData = {
+                keyword: elements.configKeyword.value,
+                order: elements.configOrder.value,
+                target_count: parseInt(elements.configTarget.value) || 100,
+                page_size: parseInt(elements.configPageSize.value) || 30,
+                filter: {
+                    within_24h: {
+                        max_hours: parseInt(elements.configMaxHours.value) || 24,
+                        min_play_per_hour: parseInt(elements.configPlayPerHour.value) || 2000
+                    },
+                    beyond_24h: {
+                        min_play_count: parseInt(elements.configMinPlay.value) || 20000
+                    }
+                },
+                max_pages_per_run: parseInt(elements.configMaxPages.value) || 100,
+                last_page: parseInt(elements.configLastPage.value) || 1,
+                request_interval: parseFloat(elements.configRequestInterval.value) || 0.5,
+                interval_minutes: parseInt(elements.configIntervalMinutes.value) || 0
+            };
+
+            elements.saveConfigBtn.disabled = true;
+            elements.saveConfigBtn.textContent = '保存中...';
+
+            const result = await apiRequest('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(configData)
+            });
+
+            elements.saveConfigBtn.disabled = false;
+            elements.saveConfigBtn.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2L5 10l-3-3L0 9l5 5 11-11-3-3z"/>
+                </svg>
+                保存配置
+            `;
+
+            if (result.code === 0) {
+                showToast('配置保存成功', 'success');
+            } else {
+                showToast('配置保存失败: ' + (result.message || '未知错误'), 'error');
+            }
+        }
+
+        // Load Status
+        async function loadStatus() {
+            const result = await apiRequest('/api/status');
+            if (result.code === 0 && result.data) {
+                const status = result.data;
+                elements.currentPage.textContent = status.current_page || 1;
+                elements.newVideos.textContent = status.new_videos || 0;
+                elements.requestInterval.textContent = (status.request_interval || 0.5) + 's';
+
+                const runStatus = status.running ? 'running' : 'idle';
+                elements.runStatus.className = 'status-badge ' + (status.running ? 'running' : '');
+                elements.runStatus.textContent = status.running ? '运行中' : '空闲';
+
+                const progress = status.progress || 0;
+                elements.progressText.textContent = `${progress}%`;
+                elements.progressFill.style.width = progress + '%';
+
+                updateSpiderStatus(status.running || false);
+            }
+        }
+
+        // Load Logs
+        async function loadLogs() {
+            const result = await apiRequest('/api/logs');
+            if (result.code === 0 && result.data) {
+                renderLogs(result.data.logs || []);
+            }
+        }
+
+        // Render Logs
+        function renderLogs(logs) {
+            elements.logContainer.innerHTML = '';
+
+            if (!logs || logs.length === 0) {
+                elements.logContainer.innerHTML = '<div class="log-entry info"><span class="log-time">[--:--:--]</span><span class="log-msg">暂无日志</span></div>';
+                return;
+            }
+
+            logs.forEach(log => {
+                const entry = document.createElement('div');
+                if (typeof log === 'object' && log.message) {
+                    entry.className = `log-entry ${log.level || 'info'}`;
+                    entry.innerHTML = `
+                        <span class="log-time">[${log.time || ''}]</span>
+                        <span class="log-msg">${log.message || ''}</span>
+                    `;
+                } else {
+                    entry.className = 'log-entry info';
+                    entry.innerHTML = `<span class="log-msg">${log}</span>`;
+                }
+                elements.logContainer.appendChild(entry);
+            });
+
+            elements.logContainer.scrollTop = elements.logContainer.scrollHeight;
+        }
+
+// ==================== Scatter Plot ====================
+        const scatterLabels = {
+            'play_count': '播放量',
+            'like_count': '点赞数',
+            'duration_min': '时长(分钟)',
+            'days_ago': '发布天数'
+        };
+
+        // Axis range state
+        let userXMin = null, userXMax = null, userYMin = null, userYMax = null;
+        let useXLog = false, useYLog = false;
+
+        function prepareScatterData(videos, xKey, yKey) {
+            const now = Date.now();
+            return videos.map(video => {
+                let x, y;
+                if (xKey === 'play_count') x = video.play_count || 0;
+                else if (xKey === 'like_count') x = video.like_count || 0;
+                else if (xKey === 'duration_min') x = parseDurationToMinutes(video.duration);
+                else if (xKey === 'days_ago') x = Math.floor((now - (video.pubdate || 0) * 1000) / (1000 * 60 * 60 * 24));
+
+                if (yKey === 'play_count') y = video.play_count || 0;
+                else if (yKey === 'like_count') y = video.like_count || 0;
+                else if (yKey === 'duration_min') y = parseDurationToMinutes(video.duration);
+                else if (yKey === 'days_ago') y = Math.floor((now - (video.pubdate || 0) * 1000) / (1000 * 60 * 60 * 24));
+
+                return {
+                    x, y,
+                    title: video.title,
+                    author: video.author,
+                    url: video.url,
+                    play_count: video.play_count || 0,
+                    like_count: video.like_count || 0,
+                    duration: video.duration || '--'
+                };
+            }).filter(d => !isNaN(d.x) && !isNaN(d.y));
+        }
+
+        function formatAxisLabel(value, key) {
+            if (key === 'play_count' || key === 'like_count') return formatNumber(value);
+            else if (key === 'duration_min') return value.toFixed(1) + 'm';
+            else if (key === 'days_ago') return Math.round(value) + 'd';
+            return value.toFixed(0);
+        }
+
+        function initScatterCanvas() {
+            const canvas = elements.scatterCanvas;
+            const container = elements.scatterContainer;
+            canvas.width = container.clientWidth;
+            canvas.height = 400;
+            canvas.style.width = '100%';
+            canvas.style.height = '400px';
+        }
+
+        function drawScatterPlot(data, xKey, yKey) {
+            const canvas = elements.scatterCanvas;
+            const ctx = canvas.getContext('2d');
+
+            scatterOriginalData = data;
+            scatterZoom = 1;
+            userXMin = null;
+            userXMax = null;
+            userYMin = null;
+            userYMax = null;
+
+            renderScatterWithTransform(ctx, xKey, yKey);
+        }
+
+        function renderScatterWithTransform(ctx, xKey, yKey) {
+            const canvas = elements.scatterCanvas;
+            const data = scatterOriginalData;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (data.length === 0) {
+                elements.scatterEmpty.style.display = 'flex';
+                return;
+            }
+            elements.scatterEmpty.style.display = 'none';
+
+            const padding = { top: 30, right: 30, bottom: 50, left: 70 };
+            const plotWidth = canvas.width - padding.left - padding.right;
+            const plotHeight = canvas.height - padding.top - padding.bottom;
+
+            const xValues = data.map(d => d.x);
+            const yValues = data.map(d => d.y);
+
+            // Calculate percentile ranges to exclude outliers
+            function percentile(arr, p) {
+                const sorted = [...arr].sort((a, b) => a - b);
+                const idx = Math.floor(sorted.length * p);
+                return sorted[idx];
+            }
+
+            const xP98 = percentile(xValues, 0.98);
+            const yP98 = percentile(yValues, 0.98);
+
+            // Calculate auto ranges for this axis combination
+            const autoXMax = xKey === 'duration_min' ? 60 : (xKey === 'days_ago' ? 90 : xP98);
+            const autoYMax = yKey === 'duration_min' ? 60 : (yKey === 'days_ago' ? 90 : yP98);
+
+            // Store original auto ranges for slider reference
+            autoRangeXMin = 0;
+            autoRangeXMax = autoXMax;
+            autoRangeYMin = 0;
+            autoRangeYMax = autoYMax;
+
+            // Use user-defined ranges or calculate auto ranges
+            let xMin = userXMin !== null ? userXMin : 0;
+            let xMax = userXMax !== null ? userXMax : autoXMax;
+            let yMin = userYMin !== null ? userYMin : 0;
+            let yMax = userYMax !== null ? userYMax : autoYMax;
+
+            // Apply zoom only if user-defined ranges are not set
+            // (when set by wheel handler, zoom is already applied to userXMin/Max)
+            if (userXMin === null) {
+                // Only apply minimum range for auto-calculated ranges (not from wheel zoom)
+                const boundedAxes = ['duration_min', 'days_ago'];
+                if (!boundedAxes.includes(xKey) && xMax - xMin < 1000) xMax = xMin + 1000;
+                if (!boundedAxes.includes(yKey) && yMax - yMin < 1) yMax = yMin + 1;
+
+                const zoomedXRange = (xMax - xMin) / scatterZoom;
+                const zoomedYRange = (yMax - yMin) / scatterZoom;
+                const xCenter = (xMin + xMax) / 2;
+                const yCenter = (yMin + yMax) / 2;
+                xMin = xCenter - zoomedXRange / 2;
+                xMax = xCenter + zoomedXRange / 2;
+                yMin = yCenter - zoomedYRange / 2;
+                yMax = yCenter + zoomedYRange / 2;
+            }
+
+            // Scale functions
+            const logScale = (val, min, max) => {
+                if (val <= 0) return 0;
+                const logMin = Math.log10(Math.max(1, min));
+                const logMax = Math.log10(Math.max(1, max));
+                return (Math.log10(val) - logMin) / (logMax - logMin);
+            };
+
+            const scaleX = x => {
+                if (useXLog) {
+                    return padding.left + logScale(x, xMin, xMax) * plotWidth;
+                }
+                return padding.left + ((x - xMin) / (xMax - xMin)) * plotWidth;
+            };
+            const scaleY = y => {
+                if (useYLog) {
+                    return padding.top + plotHeight - logScale(y, yMin, yMax) * plotHeight;
+                }
+                return padding.top + plotHeight - ((y - yMin) / (yMax - yMin)) * plotHeight;
+            };
+
+            // Store scale info for click detection
+            canvas.xScale = { min: xMin, max: xMax, scaleX };
+            canvas.yScale = { min: yMin, max: yMax, scaleY };
+            canvas.xKey = xKey;
+            canvas.yKey = yKey;
+            canvas.padding = padding;
+            canvas.plotWidth = plotWidth;
+            canvas.plotHeight = plotHeight;
+
+            // Draw grid
+            ctx.strokeStyle = 'rgba(45, 55, 72, 0.5)';
+            ctx.lineWidth = 1;
+
+            const xTicks = 5;
+            for (let i = 0; i <= xTicks; i++) {
+                const x = padding.left + (i / xTicks) * plotWidth;
+                ctx.beginPath();
+                ctx.moveTo(x, padding.top);
+                ctx.lineTo(x, padding.top + plotHeight);
+                ctx.stroke();
+            }
+
+            const yTicks = 5;
+            for (let i = 0; i <= yTicks; i++) {
+                const y = padding.top + (i / yTicks) * plotHeight;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + plotWidth, y);
+                ctx.stroke();
+            }
+
+            // Draw axes
+            ctx.strokeStyle = 'rgba(45, 55, 72, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding.left, padding.top + plotHeight);
+            ctx.lineTo(padding.left + plotWidth, padding.top + plotHeight);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(padding.left, padding.top);
+            ctx.lineTo(padding.left, padding.top + plotHeight);
+            ctx.stroke();
+
+            // Draw labels
+            ctx.fillStyle = 'rgba(153, 160, 166, 0.8)';
+            ctx.font = '11px Inter, sans-serif';
+            ctx.textAlign = 'center';
+
+            for (let i = 0; i <= xTicks; i++) {
+                const value = xMin + (i / xTicks) * (xMax - xMin);
+                const x = padding.left + (i / xTicks) * plotWidth;
+                ctx.fillText(formatAxisLabel(value, xKey), x, padding.top + plotHeight + 20);
+            }
+
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= yTicks; i++) {
+                const value = yMin + (i / yTicks) * (yMax - yMin);
+                const y = padding.top + plotHeight - (i / yTicks) * plotHeight;
+                ctx.fillText(formatAxisLabel(value, yKey), padding.left - 10, y + 4);
+            }
+
+            ctx.fillStyle = 'rgba(232, 234, 237, 0.9)';
+            ctx.font = '12px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(scatterLabels[xKey], padding.left + plotWidth / 2, canvas.height - 10);
+
+            ctx.save();
+            ctx.translate(15, padding.top + plotHeight / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText(scatterLabels[yKey], 0, 0);
+            ctx.restore();
+
+            // Draw points
+            data.forEach((point) => {
+                const px = scaleX(point.x);
+                const py = scaleY(point.y);
+
+                // Skip points outside visible area
+                if (px < padding.left - 10 || px > padding.left + plotWidth + 10 ||
+                    py < padding.top - 10 || py > padding.top + plotHeight + 10) return;
+
+                ctx.beginPath();
+                ctx.arc(px, py, 5, 0, Math.PI * 2);
+
+                // Color based on play count
+                const playRatio = (point.play_count || 0) / 2000000;
+                const hue = Math.max(0, 200 - playRatio * 200);
+                ctx.fillStyle = `hsla(${hue}, 70%, 50%, 0.7)`;
+                ctx.fill();
+                ctx.strokeStyle = `hsla(${hue}, 70%, 60%, 0.9)`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
+
+            // Update zoom level display and slider
+            elements.zoomLevel.textContent = Math.round(scatterZoom * 100) + '%';
+            if (elements.zoomSlider) {
+                elements.zoomSlider.value = Math.round(scatterZoom * 100);
+            }
+        }
+
+        function handleScatterClick(e) {
+            const canvas = elements.scatterCanvas;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            if (!canvas.xScale) return;
+
+            const padding = canvas.padding;
+            const plotWidth = canvas.plotWidth;
+            const plotHeight = canvas.plotHeight;
+
+            // Check if click is within plot area
+            if (mouseX < padding.left || mouseX > padding.left + plotWidth ||
+                mouseY < padding.top || mouseY > padding.top + plotHeight) {
+                elements.scatterTooltip.classList.remove('visible');
+                return;
+            }
+
+            // Find closest point
+            let closestPoint = null;
+            let closestDist = Infinity;
+
+            scatterOriginalData.forEach(point => {
+                const px = canvas.xScale.scaleX(point.x);
+                const py = canvas.yScale.scaleY(point.y);
+                const dist = Math.sqrt((mouseX - px) ** 2 + (mouseY - py) ** 2);
+                if (dist < closestDist && dist < 20) {
+                    closestDist = dist;
+                    closestPoint = point;
+                }
+            });
+
+            if (closestPoint) {
+                const tooltip = elements.scatterTooltip;
+                tooltip.innerHTML = `
+                    <div class="tooltip-title">${closestPoint.title}</div>
+                    <div class="tooltip-meta">${closestPoint.author || ''}</div>
+                    <div class="tooltip-values">
+                        <span>播放: ${formatNumber(closestPoint.play_count)}</span>
+                        <span>点赞: ${formatNumber(closestPoint.like_count)}</span>
+                    </div>
+                    <div class="tooltip-meta">时长: ${closestPoint.duration}</div>
+                    <div class="tooltip-link"><a href="${closestPoint.url}" target="_blank">查看视频</a></div>
+                `;
+                tooltip.style.left = (mouseX + 15) + 'px';
+                tooltip.style.top = (mouseY - 10) + 'px';
+                tooltip.classList.add('visible');
+            } else {
+                elements.scatterTooltip.classList.remove('visible');
+            }
+        }
+
+        function handleScatterWheel(e) {
+            e.preventDefault();
+
+            const canvas = elements.scatterCanvas;
+            if (!canvas.xKey || !scatterOriginalData || scatterOriginalData.length === 0) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const padding = canvas.padding;
+            const plotWidth = canvas.plotWidth;
+            const plotHeight = canvas.plotHeight;
+
+            // Debug output
+            const debug = {
+                mouse: { x: mouseX, y: mouseY },
+                padding: padding,
+                plotSize: { w: plotWidth, h: plotHeight },
+                before: {
+                    userXMin, userXMax, userYMin, userYMax,
+                    scatterZoom
+                }
+            };
+
+            // Check if mouse is in plot area
+            if (mouseX < padding.left || mouseX > padding.left + plotWidth ||
+                mouseY < padding.top || mouseY > padding.top + plotHeight) {
+                const delta = e.deltaY > 0 ? 1.2 : 0.8;
+                scatterZoom = Math.max(0.1, Math.min(10, scatterZoom * delta));
+                userXMin = null;
+                userXMax = null;
+                userYMin = null;
+                userYMax = null;
+                console.log('[Wheel] Outside plot, centered zoom, delta=' + delta + ', scatterZoom=' + scatterZoom);
+            } else {
+                const xScale = canvas.xScale;
+                const yScale = canvas.yScale;
+
+                const currentXMin = userXMin !== null ? userXMin : xScale.min;
+                const currentXMax = userXMax !== null ? userXMax : xScale.max;
+                const currentYMin = userYMin !== null ? userYMin : yScale.min;
+                const currentYMax = userYMax !== null ? userYMax : yScale.max;
+
+                const ratioX = (mouseX - padding.left) / plotWidth;
+                const ratioY = (mouseY - padding.top) / plotHeight;
+
+                const dataX = currentXMin + (currentXMax - currentXMin) * ratioX;
+                const dataY = currentYMax - (currentYMax - currentYMin) * ratioY;
+
+                const delta = e.deltaY > 0 ? 1.2 : 0.8;
+                const newXRange = (currentXMax - currentXMin) * delta;
+                const newYRange = (currentYMax - currentYMin) * delta;
+
+                userXMin = dataX - newXRange * ratioX;
+                userXMax = userXMin + newXRange;
+                userYMin = dataY - newYRange * (1 - ratioY);
+                userYMax = userYMin + newYRange;
+
+                scatterZoom = Math.max(0.1, Math.min(10, scatterZoom * delta));
+
+                debug.after = { userXMin, userXMax, userYMin, userYMax };
+                debug.data = { dataX, dataY };
+                debug.ratio = { ratioX, ratioY };
+                debug.delta = delta;
+                debug.newRange = { x: newXRange, y: newYRange };
+                console.log('[Wheel] Inside plot at', JSON.stringify(debug.mouse));
+                console.log('  ratioX=' + ratioX.toFixed(3) + ', ratioY=' + ratioY.toFixed(3));
+                console.log('  dataX=' + dataX.toFixed(2) + ', dataY=' + dataY.toFixed(2));
+                console.log('  delta=' + delta + ', newRange X=' + newXRange.toFixed(2) + ' Y=' + newYRange.toFixed(2));
+                console.log('  Before: userX=[' + (debug.before.userXMin || xScale.min).toFixed(2) + ', ' + (debug.before.userXMax || xScale.max).toFixed(2) + ']');
+                console.log('  After:  userX=[' + userXMin.toFixed(2) + ', ' + userXMax.toFixed(2) + ']');
+            }
+
+            const ctx = canvas.getContext('2d');
+            renderScatterWithTransform(ctx, canvas.xKey, canvas.yKey);
+        }
+
+        function resetScatterView() {
+            const canvas = elements.scatterCanvas;
+            if (!canvas.xKey || !scatterOriginalData || scatterOriginalData.length === 0) return;
+            scatterZoom = 1;
+            userXMin = null;
+            userXMax = null;
+            userYMin = null;
+            userYMax = null;
+            if (elements.zoomSlider) elements.zoomSlider.value = 100;
+            const ctx = canvas.getContext('2d');
+            renderScatterWithTransform(ctx, canvas.xKey, canvas.yKey);
+        }
+
+        // Scatter event listeners
+        elements.drawScatterBtn.addEventListener('click', async () => {
+            elements.drawScatterBtn.disabled = true;
+            elements.drawScatterBtn.textContent = '加载中...';
+
+            const result = await apiRequest('/api/videos?page=1&page_size=10000');
+            if (result.code === 0 && result.data && result.data.videos) {
+                const xKey = elements.scatterX.value;
+                const yKey = elements.scatterY.value;
+                scatterData = prepareScatterData(result.data.videos, xKey, yKey);
+                initScatterCanvas();
+                drawScatterPlot(scatterData, xKey, yKey);
+            }
+
+            elements.drawScatterBtn.disabled = false;
+            elements.drawScatterBtn.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="4" cy="12" r="2"/>
+                    <circle cx="12" cy="4" r="2"/>
+                    <line x1="5.5" y1="10.5" x2="10.5" y2="5.5"/>
+                </svg>
+                绘制
+            `;
+        });
+
+        // Only click handler for tooltip, no drag
+        elements.scatterCanvas.addEventListener('click', handleScatterClick);
+        elements.scatterCanvas.addEventListener('wheel', handleScatterWheel, { passive: false });
+        elements.scatterCanvas.style.cursor = 'crosshair';
+
+        // Reset scatter view button
+        elements.resetScatterBtn.addEventListener('click', resetScatterView);
+
+        // Range inputs
+        elements.applyRangeBtn = document.getElementById('applyRangeBtn');
+        elements.resetRangeBtn = document.getElementById('resetRangeBtn');
+        elements.xMinInput = document.getElementById('xMinInput');
+        elements.xMaxInput = document.getElementById('xMaxInput');
+        elements.yMinInput = document.getElementById('yMinInput');
+        elements.yMaxInput = document.getElementById('yMaxInput');
+        elements.xLogCheck = document.getElementById('xLogCheck');
+        elements.yLogCheck = document.getElementById('yLogCheck');
+
+        elements.applyRangeBtn.addEventListener('click', () => {
+            userXMin = elements.xMinInput.value ? parseFloat(elements.xMinInput.value) : null;
+            userXMax = elements.xMaxInput.value ? parseFloat(elements.xMaxInput.value) : null;
+            userYMin = elements.yMinInput.value ? parseFloat(elements.yMinInput.value) : null;
+            userYMax = elements.yMaxInput.value ? parseFloat(elements.yMaxInput.value) : null;
+            useXLog = elements.xLogCheck.checked;
+            useYLog = elements.yLogCheck.checked;
+
+            // Redraw with new range
+            if (scatterOriginalData && scatterOriginalData.length > 0) {
+                const canvas = elements.scatterCanvas;
+                const ctx = canvas.getContext('2d');
+                renderScatterWithTransform(ctx, canvas.xKey, canvas.yKey);
+            }
+            showToast('范围已应用', 'success');
+        });
+
+        elements.resetRangeBtn.addEventListener('click', () => {
+            userXMin = null;
+            userXMax = null;
+            userYMin = null;
+            userYMax = null;
+            useXLog = false;
+            useYLog = false;
+            elements.xMinInput.value = '';
+            elements.xMaxInput.value = '';
+            elements.yMinInput.value = '';
+            elements.yMaxInput.value = '';
+            elements.xLogCheck.checked = false;
+            elements.yLogCheck.checked = false;
+
+            if (scatterOriginalData && scatterOriginalData.length > 0) {
+                const canvas = elements.scatterCanvas;
+                const ctx = canvas.getContext('2d');
+                renderScatterWithTransform(ctx, canvas.xKey, canvas.yKey);
+            }
+            showToast('范围已重置', 'info');
+        });
+
+        elements.zoomInBtn.addEventListener('click', () => {
+            scatterZoom = Math.min(10, scatterZoom * 1.2);
+            userXMin = null;
+            userXMax = null;
+            userYMin = null;
+            userYMax = null;
+            if (scatterOriginalData && scatterOriginalData.length > 0) {
+                const canvas = elements.scatterCanvas;
+                const ctx = canvas.getContext('2d');
+                renderScatterWithTransform(ctx, canvas.xKey, canvas.yKey);
+            }
+        });
+
+        elements.zoomOutBtn.addEventListener('click', () => {
+            scatterZoom = Math.max(0.1, scatterZoom * 0.8);
+            userXMin = null;
+            userXMax = null;
+            userYMin = null;
+            userYMax = null;
+            if (scatterOriginalData && scatterOriginalData.length > 0) {
+                const canvas = elements.scatterCanvas;
+                const ctx = canvas.getContext('2d');
+                renderScatterWithTransform(ctx, canvas.xKey, canvas.yKey);
+            }
+        });
+
+        // ==================== Zoom Slider ====================
+        elements.zoomSlider = document.getElementById('zoomSlider');
+        if (elements.zoomSlider) {
+            elements.zoomSlider.addEventListener('input', (e) => {
+                const sliderValue = parseInt(e.target.value);
+                const newZoom = sliderValue / 100;
+                
+                const canvas = elements.scatterCanvas;
+                if (!canvas.xKey || !scatterOriginalData || scatterOriginalData.length === 0) return;
+                
+                // Zoom from origin (0,0) - left bottom corner
+                // newMax = autoMax / zoomFactor (zoomFactor > 1 means zoom in, range becomes smaller)
+                userXMin = 0;
+                userXMax = autoRangeXMax / newZoom;
+                userYMin = 0;
+                userYMax = autoRangeYMax / newZoom;
+                scatterZoom = newZoom;
+                
+                const ctx = canvas.getContext('2d');
+                renderScatterWithTransform(ctx, canvas.xKey, canvas.yKey);
+            });
+        }
+
+        // ==================== Chart Resize ====================
+        function initChartResize() {
+            document.querySelectorAll('.resize-bar').forEach(bar => {
+                let isResizing = false;
+                let startY = 0;
+                let startHeight = 0;
+                let chartType = bar.dataset.chart;
+
+                bar.addEventListener('mousedown', (e) => {
+                    isResizing = true;
+                    startY = e.clientY;
+                    startHeight = chartHeights[chartType];
+                    document.body.style.cursor = 'ns-resize';
+                    document.body.style.userSelect = 'none';
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!isResizing) return;
+                    const delta = startY - e.clientY;
+                    const newHeight = Math.max(MIN_CHART_HEIGHT, Math.min(MAX_CHART_HEIGHT, startHeight + delta));
+                    chartHeights[chartType] = newHeight;
+                    
+                    const chartCard = document.querySelector(`.resizable-chart[data-chart="${chartType}"]`);
+                    const chartBody = chartCard.querySelector('.chart-body');
+                    chartBody.style.height = newHeight + 'px';
+                });
+
+                document.addEventListener('mouseup', () => {
+                    if (isResizing) {
+                        isResizing = false;
+                        document.body.style.cursor = '';
+                        document.body.style.userSelect = '';
+                        // Re-render chart
+                        loadStats();
+                    }
+                });
+            });
+
+            // Reset button handlers
+            document.querySelectorAll('.chart-reset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const chartCard = btn.closest('.resizable-chart');
+                    const chartType = chartCard.dataset.chart;
+                    chartHeights[chartType] = DEFAULT_CHART_HEIGHT;
+                    const chartBody = chartCard.querySelector('.chart-body');
+                    chartBody.style.height = DEFAULT_CHART_HEIGHT + 'px';
+                    loadStats();
+                });
+            });
+        }
+
+        // ==================== Filter Handlers ====================
+        function setupFilters() {
+            // Duration filter
+            document.querySelectorAll('#durationFilter .filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#durationFilter .filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    durationFilter = btn.dataset.filter;
+                    applyFilters();
+                });
+            });
+
+            // Play count filter
+            document.querySelectorAll('#playFilter .filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#playFilter .filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    playFilter = btn.dataset.filter;
+                    applyFilters();
+                });
+            });
+
+            // Search
+            elements.searchInput.addEventListener('input', debounce(() => {
+                searchQuery = elements.searchInput.value.trim();
+                elements.clearSearchBtn.style.display = searchQuery ? 'block' : 'none';
+                applyFilters();
+            }, 300));
+
+            elements.clearSearchBtn.addEventListener('click', () => {
+                elements.searchInput.value = '';
+                searchQuery = '';
+                elements.clearSearchBtn.style.display = 'none';
+                applyFilters();
+            });
+
+            // Keyword filter clear
+            elements.clearKeywordFilter.addEventListener('click', clearKeywordFilter);
+
+            // View toggle
+            elements.listViewBtn.addEventListener('click', () => {
+                viewMode = 'list';
+                elements.listViewBtn.classList.add('active');
+                elements.topViewBtn.classList.remove('active');
+                loadVideos();
+            });
+
+            elements.topViewBtn.addEventListener('click', () => {
+                viewMode = 'top';
+                elements.topViewBtn.classList.add('active');
+                elements.listViewBtn.classList.remove('active');
+                loadVideos();
+            });
+
+            // Keyword refresh
+            elements.refreshKeywordBtn.addEventListener('click', () => {
+                analyzeKeywords();
+                showToast('关键词已刷新', 'info');
+            });
+        }
+
+        // Button Handlers
+        async function handleRunSpider() {
+            const action = spiderRunning ? '/api/spider/stop' : '/api/spider/start';
+            const result = await apiRequest(action, { method: 'POST' });
+            if (result.code === 0) {
+                updateSpiderStatus(!spiderRunning);
+                if (!spiderRunning) {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
+                loadStatus();
+                loadLogs();
+                showToast(spiderRunning ? '爬虫已停止' : '爬虫已启动', 'success');
+            } else {
+                showToast(result.message || '操作失败', 'error');
+            }
+        }
+
+        async function handleRefresh() {
+            showToast('正在刷新...', 'info');
+            await Promise.all([loadStats(), loadStatus(), loadLogs(), loadAllVideos()]);
+        }
+
+        async function handleClearLog() {
+            const result = await apiRequest('/api/logs/clear', { method: 'POST' });
+            if (result.code === 0) {
+                elements.logContainer.innerHTML = '<div class="log-entry info"><span class="log-time">[--:--:--]</span><span class="log-msg">日志已清空</span></div>';
+                showToast('日志已清空', 'success');
+            } else {
+                showToast('清空日志失败', 'error');
+            }
+        }
+
+        async function handleExport() {
+            window.open(API_BASE + '/api/export', '_blank');
+        }
+
+        function handlePrevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                loadVideos();
+            }
+        }
+
+        function handleNextPage() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                loadVideos();
+            }
+        }
+
+        function handleSort(sortKey) {
+            if (currentSort === sortKey) {
+                currentOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort = sortKey;
+                currentOrder = 'desc';
+            }
+            applyFilters();
+            updateSortIndicators();
+        }
+
+        function updateSortIndicators() {
+            document.querySelectorAll('th.sortable').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                if (th.dataset.sort === currentSort) {
+                    th.classList.add(currentOrder === 'asc' ? 'sort-asc' : 'sort-desc');
+                }
+            });
+        }
+
+        // Debounce utility
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Auto refresh when spider is running
+        function startAutoRefresh() {
+            if (refreshInterval) return;
+            refreshInterval = setInterval(async () => {
+                await Promise.all([loadStatus(), loadLogs(), loadAllVideos()]);
+            }, 3000);
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+
+        // Event Listeners
+        elements.runSpiderBtn.addEventListener('click', handleRunSpider);
+        elements.refreshStatusBtn.addEventListener('click', handleRefresh);
+        elements.clearLogBtn.addEventListener('click', handleClearLog);
+        elements.exportBtn.addEventListener('click', handleExport);
+        elements.prevPageBtn.addEventListener('click', handlePrevPage);
+        elements.nextPageBtn.addEventListener('click', handleNextPage);
+        elements.saveConfigBtn.addEventListener('click', saveConfig);
+
+        // Sortable header click handlers
+        document.querySelectorAll('th.sortable').forEach(th => {
+            th.addEventListener('click', () => handleSort(th.dataset.sort));
+            th.style.cursor = 'pointer';
+        });
+
+        // Tab Navigation
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+
+        function switchTab(tabName) {
+            tabButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tabName);
+            });
+            tabPanels.forEach(panel => {
+                panel.classList.toggle('active', panel.dataset.panel === tabName);
+            });
+        }
+
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+        });
+
+        // Initial Load
+        async function init() {
+            await Promise.all([
+                loadStats(),
+                loadConfig(),
+                loadStatus(),
+                loadLogs(),
+                loadAllVideos()
+            ]);
+            
+            initChartResize();
+            setupFilters();
+            initScatterCanvas();
+            
+            // Trigger initial scatter plot with default settings
+            setTimeout(() => {
+                elements.drawScatterBtn.click();
+            }, 500);
+        }
+
+        // Handle window resize for scatter canvas
+        window.addEventListener('resize', () => {
+            initScatterCanvas();
+            if (elements.scatterCanvas.scatterData) {
+                const ctx = elements.scatterCanvas.getContext('2d');
+                renderScatterWithTransform(ctx, elements.scatterCanvas.xKey, elements.scatterCanvas.yKey);
+            }
+        });
+
+        init();
+    </script>
+</body>
+</html>
