@@ -1601,17 +1601,24 @@
                 yMax = yCenter + zoomedYRange / 2;
             }
 
-            // Scale functions
+            // Scale functions - debug version
             const logScale = (val, min, max) => {
                 if (val <= 0) return 0;
-                const logMin = Math.log10(Math.max(1, min));
+                const effectiveMin = min <= 0 ? 1 : Math.max(1, min);
+                const logMin = Math.log10(effectiveMin);
                 const logMax = Math.log10(Math.max(1, max));
-                return (Math.log10(val) - logMin) / (logMax - logMin);
+                if (logMax === logMin) return 0.5;
+                const result = (Math.log10(val) - logMin) / (logMax - logMin);
+                return Math.max(0, Math.min(1, result)); // Clamp to [0,1]
             };
+
+            console.log('[Render]', useXLog ? 'X=LOG' : 'X=LINE', useYLog ? 'Y=LOG' : 'Y=LINE', 'xRange:', xMin.toFixed(0), '-', xMax.toFixed(0), 'yRange:', yMin.toFixed(0), '-', yMax.toFixed(0));
 
             const scaleX = x => {
                 if (useXLog) {
-                    return padding.left + logScale(x, xMin, xMax) * plotWidth;
+                    const result = padding.left + logScale(x, xMin, xMax) * plotWidth;
+                    // console.log('  scaleX', x.toFixed(0), '->', result.toFixed(0));
+                    return result;
                 }
                 return padding.left + ((x - xMin) / (xMax - xMin)) * plotWidth;
             };
@@ -1637,7 +1644,15 @@
 
             const xTicks = 5;
             for (let i = 0; i <= xTicks; i++) {
-                const x = padding.left + (i / xTicks) * plotWidth;
+                let x;
+                if (useXLog) {
+                    const logMin = Math.log10(Math.max(1, xMin));
+                    const logMax = Math.log10(Math.max(1, xMax));
+                    const logValue = logMin + (i / xTicks) * (logMax - logMin);
+                    x = padding.left + logScale(Math.pow(10, logValue), xMin, xMax) * plotWidth;
+                } else {
+                    x = padding.left + (i / xTicks) * plotWidth;
+                }
                 ctx.beginPath();
                 ctx.moveTo(x, padding.top);
                 ctx.lineTo(x, padding.top + plotHeight);
@@ -1646,7 +1661,15 @@
 
             const yTicks = 5;
             for (let i = 0; i <= yTicks; i++) {
-                const y = padding.top + (i / yTicks) * plotHeight;
+                let y;
+                if (useYLog) {
+                    const logMin = Math.log10(Math.max(1, yMin));
+                    const logMax = Math.log10(Math.max(1, yMax));
+                    const logValue = logMin + (i / yTicks) * (logMax - logMin);
+                    y = padding.top + plotHeight - logScale(Math.pow(10, logValue), yMin, yMax) * plotHeight;
+                } else {
+                    y = padding.top + (i / yTicks) * plotHeight;
+                }
                 ctx.beginPath();
                 ctx.moveTo(padding.left, y);
                 ctx.lineTo(padding.left + plotWidth, y);
@@ -1670,16 +1693,37 @@
             ctx.font = '11px Inter, sans-serif';
             ctx.textAlign = 'center';
 
+            // X axis ticks
             for (let i = 0; i <= xTicks; i++) {
-                const value = xMin + (i / xTicks) * (xMax - xMin);
-                const x = padding.left + (i / xTicks) * plotWidth;
+                let value, x;
+                if (useXLog) {
+                    // Generate log-spaced ticks: 1, 2, 5, 10, 20, 50, 100, ...
+                    const logMin = Math.log10(Math.max(1, xMin));
+                    const logMax = Math.log10(Math.max(1, xMax));
+                    const logValue = logMin + (i / xTicks) * (logMax - logMin);
+                    value = Math.pow(10, logValue);
+                    x = padding.left + logScale(value, xMin, xMax) * plotWidth;
+                } else {
+                    value = xMin + (i / xTicks) * (xMax - xMin);
+                    x = padding.left + (i / xTicks) * plotWidth;
+                }
                 ctx.fillText(formatAxisLabel(value, xKey), x, padding.top + plotHeight + 20);
             }
 
+            // Y axis ticks
             ctx.textAlign = 'right';
             for (let i = 0; i <= yTicks; i++) {
-                const value = yMin + (i / yTicks) * (yMax - yMin);
-                const y = padding.top + plotHeight - (i / yTicks) * plotHeight;
+                let value, y;
+                if (useYLog) {
+                    const logMin = Math.log10(Math.max(1, yMin));
+                    const logMax = Math.log10(Math.max(1, yMax));
+                    const logValue = logMin + (i / yTicks) * (logMax - logMin);
+                    value = Math.pow(10, logValue);
+                    y = padding.top + plotHeight - logScale(value, yMin, yMax) * plotHeight;
+                } else {
+                    value = yMin + (i / yTicks) * (yMax - yMin);
+                    y = padding.top + plotHeight - (i / yTicks) * plotHeight;
+                }
                 ctx.fillText(formatAxisLabel(value, yKey), padding.left - 10, y + 4);
             }
 
@@ -1721,6 +1765,12 @@
             if (elements.zoomSlider) {
                 elements.zoomSlider.value = Math.round(scatterZoom * 100);
             }
+
+            // Update range inputs with current values
+            if (elements.xMinInput) elements.xMinInput.value = xMin.toFixed(1);
+            if (elements.xMaxInput) elements.xMaxInput.value = xMax.toFixed(1);
+            if (elements.yMinInput) elements.yMinInput.value = yMin.toFixed(1);
+            if (elements.yMaxInput) elements.yMaxInput.value = yMax.toFixed(1);
         }
 
         function handleScatterClick(e) {
